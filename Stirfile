@@ -1,0 +1,29 @@
+@toplevel
+@strict
+
+$CC="cc"
+$CFLAGS=["-Wall", "-O3"]
+$LIBS=['-pthread']
+
+@phonyrule: 'all': 'camftpd' 'pwenc'
+
+@rectgtrule: 'argon2/libargon2.a': @recdep 'argon2'
+@	["make", "-C", "argon2"]
+
+@cleanhook:
+@	["make", "-C", "argon2", "clean"]
+
+@bothcleanhook:
+@	["make", "-C", "argon2", "clean"]
+
+'camftpd': 'camftpd.o' 'argon2/libargon2.a'
+@	[$CC, @$CFLAGS, "-o", $@, @@suffilter($^, ".o"), @@suffilter($^, ".a"), @$LIBS]
+
+'camftpd.o': 'camftpd.c'
+@	[$CC, @$CFLAGS, "-c", "-o", $@, $<]
+
+'pwenc': 'pwenc.o' 'argon2/libargon2.a'
+@	[$CC, @$CFLAGS, "-o", $@, @@suffilter($^, ".o"), @@suffilter($^, ".a"), @$LIBS]
+
+'pwenc.o': 'pwenc.c'
+@	[$CC, @$CFLAGS, "-c", "-o", $@, $<]

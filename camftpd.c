@@ -90,6 +90,11 @@ size_t bufgetline(char *line, size_t maxsz)
 			// FIXME log error
 			_exit(1);
 		}
+		if (ch == '\0')
+		{
+			// FIXME log error
+			_exit(1);
+		}
 		line[i++] = (char)ch;
 	}
 }
@@ -112,7 +117,7 @@ void handle_pass(const char *buf, size_t sz)
 		// FIXME log error
 		_exit(1);
 	}
-	if (strcmp(buf, passhash) != 0) // FIXME hash
+	if (argon2id_verify(passhash, buf, strlen(buf)) != ARGON2_OK)
 	{
 		// FIXME log error
 		_exit(1);
