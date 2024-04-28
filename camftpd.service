@@ -1,0 +1,12 @@
+[Unit]
+Description=Surveillance camera put-only FTPD
+
+[Service]
+User=root
+WorkingDirectory=/usr/local/etc
+ExecStart=/usr/local/etc/startcamftpd.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

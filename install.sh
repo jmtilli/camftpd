@@ -42,6 +42,11 @@ instetcsample()
   cp "$1" "$P/etc/.$1.cftinstnew.$$.$H" || exit 1
   mv "$P/etc/.$1.cftinstnew.$$.$H" "$P/etc/$1.sample" || exit 1
 }
+instsystemd()
+{
+  cp "$1" "/etc/systemd/system/.$1.cftinstnew.$$.$H" || exit 1
+  mv "/etc/systemd/system/.$1.cftinstnew.$$.$H" "/etc/systemd/system/$1" || exit 1
+}
 
 
 # Ensure bin directory is there
@@ -52,4 +57,17 @@ instsbin camftpdpwenc
 instsbin camftpd
 instetcsample startcamftpd.sh
 
+if [ "a$PREFIX" = "a/usr/local" ]; then
+  instsystemd camftpd.service
+  systemctl daemon-reload
+fi
+
 echo "All done, camftpd has been installed to $P"
+if [ "a$PREFIX" = "a/usr/local" ]; then
+  echo "Systemd service also installed"
+fi
+echo "Copy $P/etc/startcamftpd.sh.sample to $P/etc/startcamftpd.sh"
+if [ "a$PREFIX" = "a/usr/local" ]; then
+  echo "Then run systemctl start camftpd.service"
+  echo "And maybe systemctl enable camftpd.service"
+fi
