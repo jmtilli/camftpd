@@ -450,6 +450,7 @@ void child(int newfd)
 					}
 				}
 				close(ffd);
+				close(accfd);
 				if (write(fd, xfercomplete, strlen(xfercomplete)) != (ssize_t)strlen(xfercomplete))
 				{
 					// FIXME log error
@@ -514,6 +515,7 @@ void child(int newfd)
 					}
 				}
 				close(ffd);
+				close(accfd);
 				if (write(fd, xfercomplete, strlen(xfercomplete)) != (ssize_t)strlen(xfercomplete))
 				{
 					// FIXME log error
