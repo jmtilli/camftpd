@@ -66,7 +66,7 @@ smka
 ./install.sh
 ```
 
-This installs stirmake to `/usr/local`.
+This installs camftpd to `/usr/local`.
 
 Then run camftpdpwenc, type your password and get its hash.
 
