@@ -5,7 +5,7 @@ $CC="cc"
 $CFLAGS=["-Wall", "-O3"]
 $LIBS=['-pthread']
 
-@phonyrule: 'all': 'camftpd' 'pwenc'
+@phonyrule: 'all': 'camftpd' 'camftpdpwenc'
 
 @rectgtrule: 'argon2/libargon2.a': @recdep 'argon2'
 @	["make", "-C", "argon2"]
@@ -22,8 +22,8 @@ $LIBS=['-pthread']
 'camftpd.o': 'camftpd.c'
 @	[$CC, @$CFLAGS, "-c", "-o", $@, $<]
 
-'pwenc': 'pwenc.o' 'argon2/libargon2.a'
+'camftpdpwenc': 'camftpdpwenc.o' 'argon2/libargon2.a'
 @	[$CC, @$CFLAGS, "-o", $@, @@suffilter($^, ".o"), @@suffilter($^, ".a"), @$LIBS]
 
-'pwenc.o': 'pwenc.c'
+'camftpdpwenc.o': 'camftpdpwenc.c'
 @	[$CC, @$CFLAGS, "-c", "-o", $@, $<]
