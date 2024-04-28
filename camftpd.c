@@ -1,6 +1,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <pwd.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +15,7 @@
 
 void usage(const char *argv0)
 {
-	fprintf(stderr, "Usage: %s listenaddr cliaddr user passhash\n", argv0);
+	fprintf(stderr, "Usage: %s dir listenaddr cliaddr linuxuser ftpuser passhash\n", argv0);
 	exit(1);
 }
 const char *user = NULL;
@@ -380,7 +382,7 @@ void child(int newfd)
 				// FIXME log error
 				_exit(1);
 			}
-			ffd = open(buf+5, O_WRONLY|O_CREAT|O_EXCL, 0666);
+			ffd = open(buf+5, O_WRONLY|O_CREAT|O_EXCL, 0444);
 			if (ffd < 0)
 			{
 				// Can't open
@@ -532,7 +534,8 @@ int main(int argc, char **argv)
 	socklen_t addrlen;
 	int newfd;
 	int optval = 1;
-	if (argc != 5)
+	struct passwd *pw;
+	if (argc != 7)
 	{
 		usage(argv[0]);
 	}
@@ -545,12 +548,23 @@ int main(int argc, char **argv)
 	setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(21);
-	sin.sin_addr.s_addr = inet_addr(argv[1]);
-	srvaddr = inet_addr(argv[1]);
-	cliaddr = inet_addr(argv[2]);
-	cliaddrstr = argv[2];
-	user = argv[3];
-	passhash = argv[4];
+	if (chdir(argv[1]) != 0)
+	{
+		fprintf(stderr, "Can't change directory\n");
+		exit(1);
+	}
+	sin.sin_addr.s_addr = inet_addr(argv[2]);
+	srvaddr = inet_addr(argv[2]);
+	cliaddr = inet_addr(argv[3]);
+	cliaddrstr = argv[3];
+	pw = getpwnam(argv[4]);
+	if (pw == NULL)
+	{
+		fprintf(stderr, "Can't find user\n");
+		exit(1);
+	}
+	user = argv[5];
+	passhash = argv[6];
 	if (bind(sockfd, (const struct sockaddr*)&sin, sizeof(sin)) != 0)
 	{
 		fprintf(stderr, "Can't bind socket\n");
@@ -559,6 +573,16 @@ int main(int argc, char **argv)
 	if (listen(sockfd, 512) != 0)
 	{
 		fprintf(stderr, "Can't listen\n");
+		exit(1);
+	}
+	if (setgid(pw->pw_gid) != 0)
+	{
+		fprintf(stderr, "Can't setgid\n");
+		exit(1);
+	}
+	if (setuid(pw->pw_uid) != 0)
+	{
+		fprintf(stderr, "Can't setuid\n");
 		exit(1);
 	}
 	signal(SIGCHLD, SIG_IGN);
