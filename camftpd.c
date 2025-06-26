@@ -449,6 +449,7 @@ void child(int newfd)
 						_exit(1);
 					}
 				}
+				fsync(ffd);
 				close(ffd);
 				close(accfd);
 				if (write(fd, xfercomplete, strlen(xfercomplete)) != (ssize_t)strlen(xfercomplete))
@@ -514,6 +515,7 @@ void child(int newfd)
 						_exit(1);
 					}
 				}
+				fsync(ffd);
 				close(ffd);
 				close(accfd);
 				if (write(fd, xfercomplete, strlen(xfercomplete)) != (ssize_t)strlen(xfercomplete))
