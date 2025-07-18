@@ -453,9 +453,8 @@ void child(int newfd)
 					accfd = accept(pasvfd, (struct sockaddr*)&sin, &addrlen);
 					if (accfd < 0)
 					{
-						// Can't accept
-						// FIXME log error
-						_exit(1);
+						dowrite(fd, "425 Can't open PASV mode connection.\r\n");
+						continue;
 					}
 					if (sin.sin_family != AF_INET || addrlen != sizeof(sin))
 					{
@@ -486,6 +485,10 @@ void child(int newfd)
 					char fbuf[16384];
 					ssize_t bytes_read;
 					bytes_read = read(accfd, fbuf, sizeof(fbuf));
+					if (bytes_read < 0 && errno == EINTR)
+					{
+						continue;
+					}
 					if (bytes_read < 0)
 					{
 						// FIXME log error
@@ -529,13 +532,15 @@ void child(int newfd)
 				accfd = socket(AF_INET, SOCK_STREAM, 0);
 				if (accfd < 0)
 				{
-					// FIXME log error
-					_exit(1);
+					dowrite(fd, "425 No resources for PORT mode.\r\n");
+					continue;
 				}
 				if (connect(accfd, (const struct sockaddr*)&sin, sizeof(sin)) != 0)
 				{
-					// FIXME log error
-					_exit(1);
+					dowrite(fd, "425 Can't open data connection.\r\n");
+					close(accfd);
+					accfd = -1;
+					continue;
 				}
 				if (snprintf(respbuf, sizeof(respbuf), "150 Opening %s mode data connection.\r\n", mode) >= (ssize_t)sizeof(respbuf))
 				{
@@ -552,6 +557,10 @@ void child(int newfd)
 					char fbuf[16384];
 					ssize_t bytes_read;
 					bytes_read = read(accfd, fbuf, sizeof(fbuf));
+					if (bytes_read < 0 && errno == EINTR)
+					{
+						continue;
+					}
 					if (bytes_read < 0)
 					{
 						// FIXME log error
