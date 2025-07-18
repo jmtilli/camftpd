@@ -54,6 +54,14 @@ int bufgetc(void)
 	return (unsigned char)gbuf[gbufstart++];
 }
 
+void dowrite(int fd, const char *str)
+{
+	if (write(fd, str, strlen(str)) != (ssize_t)strlen(str))
+	{
+		// FIXME log error
+		_exit(1);
+	}
+}
 size_t bufgetline(char *line, size_t maxsz)
 {
 	size_t i = 0;
@@ -243,32 +251,39 @@ void child(int newfd)
 			int a,b,c,d,e,f;
 			if (pasv)
 			{
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "503 PORT in PASV mode.\r\n");
+				continue;
 			}
 			if (sscanf(buf+5, "%d,%d,%d,%d,%d,%d", &a,&b,&c,&d,&e,&f) != 6)
 			{
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "501 Invalid PORT params.\r\n");
+				continue;
 			}
 			if (a < 0 || b < 0 || c < 0 || d < 0 || e < 0 || f < 0)
 			{
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "501 Invalid PORT params.\r\n");
+				continue;
 			}
 			if (a > 255 || b > 255 || c > 255 || d > 255 || e > 255 || f > 255)
 			{
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "501 Invalid PORT params.\r\n");
+				continue;
 			}
 			if (htonl((a<<24) | (b<<16) | (c<<8) | d) != cliaddr)
 			{
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "535 Invalid client address.\r\n");
+				continue;
 			}
 			cliport = (e<<8) | f;
 			if (cliport == 0)
 			{
+				cliport = -1;
+				dowrite(fd, "501 Invalid client port zero.\r\n");
+				continue;
+			}
+			if (cliport < 0 || cliport > 65535)
+			{
+				// This should never happen
 				// FIXME log error
 				_exit(1);
 			}
