@@ -407,46 +407,39 @@ void child(int newfd)
 			int ffd;
 			if (strlen(buf) != sz)
 			{
-				// There is extra NUL
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "501 Extra NUL.\r\n");
+				continue;
 			}
 			if (strchr(buf, '/'))
 			{
-				// No slash allowed
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "501 File name contains slash.\r\n");
+				continue;
 			}
 			if (strchr(buf, '\r'))
 			{
-				// No CR allowed
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "501 File name contains carriage return.\r\n");
+				continue;
 			}
 			if (strchr(buf, '\n'))
 			{
-				// No LF allowed
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "501 File name contains newline.\r\n");
+				continue;
 			}
 			if (strcmp(buf+5, ".") == 0)
 			{
-				// Current directory
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "501 File name is .\r\n");
+				continue;
 			}
 			if (strcmp(buf+5, "..") == 0)
 			{
-				// Parent directory
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "501 File name is ..\r\n");
+				continue;
 			}
 			ffd = open(buf+5, O_WRONLY|O_CREAT|O_EXCL, 0444);
 			if (ffd < 0)
 			{
-				// Can't open
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "450 File cannot be opened exclusively.\r\n");
+				continue;
 			}
 			if (pasv)
 			{
