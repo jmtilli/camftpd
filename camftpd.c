@@ -376,7 +376,7 @@ void child(int newfd)
 		if (sz == 6 && buf[0] == 'T' && buf[1] == 'Y' && buf[2] == 'P' && buf[3] == 'E' && buf[4] == ' ' && buf[5] == 'A')
 		{
 			mode = "ASCII";
-			if (write(fd, typei, strlen(typea)) != (ssize_t)strlen(typea))
+			if (write(fd, typea, strlen(typea)) != (ssize_t)strlen(typea))
 			{
 				// FIXME log error
 				_exit(1);
