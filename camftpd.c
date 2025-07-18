@@ -132,6 +132,8 @@ const char *userloginstart = "230 User ";
 const char *userloginend = " logged in.\r\n";
 const char *cwdsuccess = "250 CWD command successful. \"/\" is current directory.\r\n";
 const char *authni = "500 This security scheme is not implemented.\r\n";
+const char *cmdni = "500 Unknown command.\r\n";
+const char *nologin = "530 You aren't logged in.\r\n";
 const char *xfercomplete = "226 Transfer complete.\r\n";
 const char *goodbye = "221 Goodbye.\r\n";
 const char *typei = "200 Type set to I\r\n";
@@ -202,8 +204,12 @@ void child(int newfd)
 		}
 		if (!pass_seen)
 		{
-			// FIXME log error
-			_exit(1);
+			if (write(fd, nologin, strlen(nologin)) != (ssize_t)strlen(nologin))
+			{
+				// FIXME log error
+				_exit(1);
+			}
+			continue;
 		}
 		// FIXME EPSV
 		if (sz >= 4 && buf[0] == 'C' && buf[1] == 'W' && buf[2] == 'D' && buf[3] == ' ')
@@ -538,8 +544,11 @@ void child(int newfd)
 				continue;
 			}
 		}
-		// FIXME log error, unsupported command
-		_exit(0);
+		if (write(fd, cmdni, strlen(cmdni)) != (ssize_t)strlen(cmdni))
+		{
+			// FIXME log error
+			_exit(1);
+		}
 	}
 }
 
