@@ -107,8 +107,7 @@ void handle_user(const char *buf, size_t sz)
 {
 	if (strcmp(buf, user) != 0)
 	{
-		// FIXME log error
-		_exit(1);
+		return;
 	}
 	user_seen = 1;
 }
@@ -116,13 +115,11 @@ void handle_pass(const char *buf, size_t sz)
 {
 	if (!user_seen)
 	{
-		// FIXME log error
-		_exit(1);
+		return;
 	}
 	if (argon2id_verify(passhash, buf, strlen(buf)) != ARGON2_OK)
 	{
-		// FIXME log error
-		_exit(1);
+		return;
 	}
 	pass_seen = 1;
 }
@@ -132,6 +129,8 @@ const char *userloginstart = "230 User ";
 const char *userloginend = " logged in.\r\n";
 const char *cwdsuccess = "250 CWD command successful. \"/\" is current directory.\r\n";
 const char *authni = "500 This security scheme is not implemented.\r\n";
+const char *invuser = "430 Invalid username.\r\n";
+const char *invpass = "430 Invalid password.\r\n";
 const char *cmdni = "500 Unknown command.\r\n";
 const char *nologin = "530 You aren't logged in.\r\n";
 const char *xfercomplete = "226 Transfer complete.\r\n";
@@ -161,6 +160,15 @@ void child(int newfd)
 		{
 			struct iovec iov[3];
 			handle_user(buf+5, sz-5);
+			if (!user_seen)
+			{
+				if (write(fd, invuser, strlen(invuser)) != (ssize_t)strlen(invuser))
+				{
+					// FIXME log error
+					_exit(1);
+				}
+				continue;
+			}
 			iov[0].iov_base = (void*)passreq;
 			iov[0].iov_len = strlen(passreq);
 			iov[1].iov_base = (void*)user;
@@ -189,6 +197,15 @@ void child(int newfd)
 		{
 			struct iovec iov[3];
 			handle_pass(buf+5, sz-5);
+			if (!pass_seen)
+			{
+				if (write(fd, invpass, strlen(invpass)) != (ssize_t)strlen(invpass))
+				{
+					// FIXME log error
+					_exit(1);
+				}
+				continue;
+			}
 			iov[0].iov_base = (void*)userloginstart;
 			iov[0].iov_len = strlen(userloginstart);
 			iov[1].iov_base = (void*)user;
