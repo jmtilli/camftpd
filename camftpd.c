@@ -131,6 +131,7 @@ const char *passreq = "331 Password required for ";
 const char *userloginstart = "230 User ";
 const char *userloginend = " logged in.\r\n";
 const char *cwdsuccess = "250 CWD command successful. \"/\" is current directory.\r\n";
+const char *authni = "500 This security scheme is not implemented.\r\n";
 const char *xfercomplete = "226 Transfer complete.\r\n";
 const char *goodbye = "221 Goodbye.\r\n";
 const char *typei = "200 Type set to I\r\n";
@@ -165,6 +166,17 @@ void child(int newfd)
 			iov[2].iov_base = ".\r\n";
 			iov[2].iov_len = 3;
 			if (writev(fd, iov, 3) != (ssize_t)(iov[0].iov_len + iov[1].iov_len + iov[2].iov_len))
+			{
+				// FIXME log error
+				_exit(1);
+			}
+			continue;
+		}
+		if (sz == 8 && buf[0] == 'A' && buf[1] == 'U' &&
+		    buf[2] == 'T' && buf[3] == 'H' && buf[4] == ' ' &&
+		    buf[5] == 'T' && buf[6] == 'L' && buf[7] == 'S')
+		{
+			if (write(fd, authni, strlen(authni)) != (ssize_t)strlen(authni))
 			{
 				// FIXME log error
 				_exit(1);
