@@ -299,29 +299,38 @@ void child(int newfd)
 			struct sockaddr_in sin;
 			char respbuf[1024];
 			socklen_t addrlen;
-			if (cliport >= 0 || pasv)
+			if (cliport >= 0)
 			{
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "503 PASV when PORT given.\r\n");
+				continue;
+			}
+			if (pasv)
+			{
+				dowrite(fd, "503 Already in PASV mode.\r\n");
+				continue;
 			}
 			pasvfd = socket(AF_INET, SOCK_STREAM, 0);
 			if (pasvfd < 0)
 			{
-				// FIXME log error
-				_exit(1);
+				dowrite(fd, "425 No resources for PASV mode.\r\n");
+				continue;
 			}
 			sin.sin_family = AF_INET;
 			sin.sin_addr.s_addr = srvaddr;
 			sin.sin_port = htons(0);
 			if (bind(pasvfd, (const struct sockaddr*)&sin, sizeof(sin)) != 0)
 			{
-				// FIXME log error
-				_exit(1);
+				close(pasvfd);
+				pasvfd = -1;
+				dowrite(fd, "425 No resources for PASV mode.\r\n");
+				continue;
 			}
 			if (listen(pasvfd, 512) != 0)
 			{
-				// FIXME log error
-				_exit(1);
+				close(pasvfd);
+				pasvfd = -1;
+				dowrite(fd, "425 No resources for PASV mode.\r\n");
+				continue;
 			}
 			addrlen = sizeof(sin);
 			if (getsockname(pasvfd, (struct sockaddr*)&sin, &addrlen) != 0)
