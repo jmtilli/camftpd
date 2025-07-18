@@ -163,6 +163,7 @@ void child(int newfd)
 	}
 	for (;;)
 	{
+newiteration:
 		sz = bufgetline(buf, sizeof(buf));
 		if (sz >= 5 && buf[0] == 'U' && buf[1] == 'S' && buf[2] == 'E' && buf[3] == 'R' && buf[4] == ' ')
 		{
@@ -454,7 +455,8 @@ void child(int newfd)
 					if (accfd < 0)
 					{
 						dowrite(fd, "425 Can't open PASV mode connection.\r\n");
-						continue;
+						close(ffd);
+						goto newiteration;
 					}
 					if (sin.sin_family != AF_INET || addrlen != sizeof(sin))
 					{
