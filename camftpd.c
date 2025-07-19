@@ -15,7 +15,7 @@
 
 void usage(const char *argv0)
 {
-	fprintf(stderr, "Usage: %s dir listenaddr cliaddr linuxuser ftpuser passhash\n", argv0);
+	fprintf(stderr, "Usage: %s dir listenaddr cliaddr linuxuser ftpuser passhash seq(0/1)\n", argv0);
 	exit(1);
 }
 const char *user = NULL;
@@ -23,6 +23,8 @@ const char *passhash = NULL;
 in_addr_t cliaddr;
 in_addr_t srvaddr;
 const char *cliaddrstr;
+int seq = 0;
+uint64_t curseq = 0;
 
 char gbuf[1024];
 size_t gbufstart;
@@ -406,6 +408,8 @@ newiteration:
 		if (sz > 5 && buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'O' && buf[3] == 'R' && buf[4] == ' ')
 		{
 			int ffd;
+			char prefix[PATH_MAX+1];
+			char fname[PATH_MAX+1];
 			if (strlen(buf) != sz)
 			{
 				dowrite(fd, "501 Extra NUL.\r\n");
@@ -436,7 +440,32 @@ newiteration:
 				dowrite(fd, "501 File name is ..\r\n");
 				continue;
 			}
-			ffd = open(buf+5, O_WRONLY|O_CREAT|O_EXCL, 0444);
+			if (strrchr(buf+5, '.') && seq)
+			{
+				size_t prefixlen = strrchr(buf+5, '.') - (buf+5);
+				const char *suffix = strrchr(buf+5, '.') + 1;
+				if (prefixlen+1 > sizeof(prefix))
+				{
+					dowrite(fd, "501 Too long file name.\r\n");
+					continue;
+				}
+				memcpy(prefix, buf+5, prefixlen);
+				prefix[prefixlen] = '\0';
+				if (snprintf(fname, sizeof(fname), "%s_%.8llu.%s", prefix, (unsigned long long)curseq++, suffix) >= (int)sizeof(fname))
+				{
+					dowrite(fd, "501 Too long file name.\r\n");
+					continue;
+				}
+			}
+			else
+			{
+				if (snprintf(fname, sizeof(fname), "%s", buf+5) >= (int)sizeof(fname))
+				{
+					dowrite(fd, "501 Too long file name.\r\n");
+					continue;
+				}
+			}
+			ffd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0444);
 			if (ffd < 0)
 			{
 				dowrite(fd, "450 File cannot be opened exclusively.\r\n");
@@ -605,7 +634,7 @@ int main(int argc, char **argv)
 	int newfd;
 	int optval = 1;
 	struct passwd *pw;
-	if (argc != 7)
+	if (argc != 8)
 	{
 		usage(argv[0]);
 	}
@@ -635,6 +664,7 @@ int main(int argc, char **argv)
 	}
 	user = argv[5];
 	passhash = argv[6];
+	seq = atoi(argv[7]);
 	if (bind(sockfd, (const struct sockaddr*)&sin, sizeof(sin)) != 0)
 	{
 		fprintf(stderr, "Can't bind socket\n");
