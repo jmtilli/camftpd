@@ -2,6 +2,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <pwd.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -12,6 +13,11 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "argon2/include/argon2.h"
+
+struct ftpshmem {
+	uint64_t curseq;
+};
+struct ftpshmem *ftpshmem;
 
 void usage(const char *argv0)
 {
@@ -24,7 +30,6 @@ in_addr_t cliaddr;
 in_addr_t srvaddr;
 const char *cliaddrstr;
 int seq = 0;
-uint64_t curseq = 0;
 
 char gbuf[1024];
 size_t gbufstart;
@@ -451,7 +456,7 @@ newiteration:
 				}
 				memcpy(prefix, buf+5, prefixlen);
 				prefix[prefixlen] = '\0';
-				if (snprintf(fname, sizeof(fname), "%s_%.8llu.%s", prefix, (unsigned long long)curseq++, suffix) >= (int)sizeof(fname))
+				if (snprintf(fname, sizeof(fname), "%s_%.8llu.%s", prefix, (unsigned long long)ftpshmem->curseq++, suffix) >= (int)sizeof(fname))
 				{
 					dowrite(fd, "501 Too long file name.\r\n");
 					continue;
@@ -638,6 +643,7 @@ int main(int argc, char **argv)
 	{
 		usage(argv[0]);
 	}
+	ftpshmem = mmap(NULL, sizeof(*ftpshmem), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0)
 	{
